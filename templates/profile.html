@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ username }}'s Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>{{ username }}'s Profile</h1>
+    <a href="{{ url_for('index') }}" class="button-link">← Back to Home</a>
+    <a href="{{ url_for('logout') }}" class="button-link">Logout</a>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <h2>Your Created Posts</h2>
+    {% for post in user_posts %}
+      <div class="post">
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.content }}</p>
+      </div>
+    {% else %}
+      <p>You have not created any posts yet.</p>
+    {% endfor %}
+
+    <h2>Your Event Registrations</h2>
+    {% for reg in collab_regs %}
+      <div class="post">
+        <h3>Registered for: {{ reg.post_title }}</h3>
+        <p><strong>Name:</strong> {{ reg.name }}</p>
+        <p><strong>Email:</strong> {{ reg.email }}</p>
+        <p><strong>Interests / Skills:</strong> {{ reg.interests }}</p>
+      </div>
+    {% else %}
+      <p>You have not registered for any events yet.</p>
+    {% endfor %}
+</div>
+</body>
+</html>

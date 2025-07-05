@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Collaboration Hub</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Welcome, {{ username }}!</h1>
+    <a href="{{ url_for('logout') }}" class="button-link">Logout</a>
+    <a href="{{ url_for('create_post') }}" class="button-link">Create New Post</a>
+    <a href="{{ url_for('profile') }}" class="button-link">Your Profile</a>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <h2>All Posts / Events</h2>
+    {% for post in posts %}
+      <div class="post">
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.content }}</p>
+        <small>By {{ post.author }}</small>
+        <br><br>
+        <a href="{{ url_for('register_post', post_id=post['_id']) }}" class="button-link">
+            Register for this Event
+        </a>
+      </div>
+    {% else %}
+      <p>No posts yet. Be the first to create one!</p>
+    {% endfor %}
+</div>
+</body>
+</html>

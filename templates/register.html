@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register for Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Event Registration</h1>
+    <a href="{{ url_for('index') }}" class="button-link">← Back to Home</a>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <label>Name:</label>
+        <input type="text" name="name" required><br>
+
+        <label>Email:</label>
+        <input type="text" name="email" required><br>
+
+        <label>Interests / Areas you want to explore:</label>
+        <textarea name="interests" rows="4" required></textarea><br>
+
+        <button type="submit">Register for Event</button>
+    </form>
+</div>
+</body>
+</html>
