@@ -5,39 +5,30 @@ from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
 
-# -------------------- Load environment --------------------
+# Load .env
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 SECRET_KEY = os.getenv("SECRET_KEY")
+DB_NAME = os.getenv("DB_NAME", "student_collab_db")
 
-if not MONGO_URI:
-    raise ValueError("⚠️ MONGO_URI not set in .env file!")
+if not MONGO_URI or not SECRET_KEY:
+    raise ValueError("MONGO_URI or SECRET_KEY not set!")
 
-if not SECRET_KEY:
-    raise ValueError("⚠️ SECRET_KEY not set in .env file!")
-
-# -------------------- Flask App & MongoDB --------------------
+# Init Flask & Mongo
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-# ✅ Fix for Render: force TLS and allow certs
-client = MongoClient(
-    MONGO_URI,
-    tls=True,
-    tlsAllowInvalidCertificates=True
-)
-db_name = os.getenv("DB_NAME", "student_collab_db")
-db = client[db_name]
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
 
 users_collection = db["users"]
 posts_collection = db["posts"]
 post_registrations_collection = db["post_registrations"]
 
-print(f"✅ Connected to MongoDB Atlas database: {db.name}")
-print(f"📂 Current collections: {db.list_collection_names()}")
+print(f"✅ Connected to MongoDB database: {db.name}")
 
-# -------------------- Routes --------------------
+# Routes
 @app.route('/')
 def index():
     if 'username' not in session:
@@ -50,11 +41,9 @@ def create_post():
     if 'username' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
         posts_collection.insert_one({
-            'title': title,
-            'content': content,
+            'title': request.form['title'],
+            'content': request.form['content'],
             'author': session['username']
         })
         flash("Post created successfully!")
@@ -70,16 +59,13 @@ def register_post(post_id):
         flash("Post not found.")
         return redirect(url_for('index'))
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        interests = request.form['interests']
         post_registrations_collection.insert_one({
             "username": session['username'],
             "post_id": ObjectId(post_id),
             "post_title": post['title'],
-            "name": name,
-            "email": email,
-            "interests": interests
+            "name": request.form['name'],
+            "email": request.form['email'],
+            "interests": request.form['interests']
         })
         flash("Successfully registered for this event!")
         return redirect(url_for('index'))
@@ -92,24 +78,18 @@ def profile():
     username = session['username']
     user_posts = posts_collection.find({'author': username})
     collab_regs = post_registrations_collection.find({'username': username})
-    return render_template("profile.html",
-                           user_posts=user_posts,
-                           collab_regs=collab_regs,
-                           username=username)
+    return render_template("profile.html", user_posts=user_posts, collab_regs=collab_regs, username=username)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        existing_user = users_collection.find_one({'username': username})
-        print(f"📝 Signup attempt for: {username}")
-        if existing_user:
+        if users_collection.find_one({'username': username}):
             flash('Username already exists. Try logging in.')
             return redirect(url_for('signup'))
         hashed_pw = generate_password_hash(password)
-        result = users_collection.insert_one({'username': username, 'password': hashed_pw})
-        print(f"✅ Inserted new user with _id: {result.inserted_id}")
+        users_collection.insert_one({'username': username, 'password': hashed_pw})
         flash("Signup successful! Please login.")
         return redirect(url_for('login'))
     return render_template("signup.html")
@@ -117,17 +97,12 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = users_collection.find_one({'username': username})
-        print(f"🔍 Login attempt for: {username}")
-        if user and check_password_hash(user['password'], password):
-            session['username'] = username
+        user = users_collection.find_one({'username': request.form['username']})
+        if user and check_password_hash(user['password'], request.form['password']):
+            session['username'] = request.form['username']
             flash("Login successful!")
             return redirect(url_for('index'))
-        else:
-            flash("Invalid username or password.")
-            return redirect(url_for('login'))
+        flash("Invalid username or password.")
     return render_template("login.html")
 
 @app.route('/logout')
@@ -136,7 +111,8 @@ def logout():
     flash("Logged out successfully.")
     return redirect(url_for('login'))
 
-# -------------------- Run Server --------------------
+# Run with Render's PORT
 if __name__ == '__main__':
-    print("🚀 Server running on http://127.0.0.1:5000/")
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"🚀 Server running on 0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port)
