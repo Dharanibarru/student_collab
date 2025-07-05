@@ -21,7 +21,12 @@ if not SECRET_KEY:
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
-client = MongoClient(MONGO_URI)
+# ✅ Fix for Render: force TLS and allow certs
+client = MongoClient(
+    MONGO_URI,
+    tls=True,
+    tlsAllowInvalidCertificates=True
+)
 db_name = os.getenv("DB_NAME", "student_collab_db")
 db = client[db_name]
 
